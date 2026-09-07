@@ -4,10 +4,12 @@ import torch
 from torch import Tensor
 
 from torch.optim.optimizer import (
-    _to_scalar,
     Optimizer,
     ParamsT,
 )
+
+def _to_scalar(x):
+    return float(x)
 
 __all__ = ["Muon"]
 
