@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "reference": {
+    "game_version": "0.7.1746645739",
+    "source_sha256": {
+      "HoloCure.exe": "8c9eb4c6042dfbe2e136fc9f96e3fcaddf9bdcf7cc6b59327ee9ac24fe315b36",
+      "data.win": "0e40d7d70d835ff9786500c0d345da481fdac34aee6efd95142108ccc6d876c3"
+    }
+  },
+  "status": "runtime_configuration_extracted; gameplay_parity_unverified",
+  "character": {
+    "id": "suisei",
+    "attackID": "AxeSwing",
+    "HP": 70,
+    "ATK": 1.3,
+    "SPD": 1.3,
+    "crit": 10
+  },
+  "weapon_levels": [
+    {
+      "level": 1,
+      "raw_config": {
+        "attackID": "AxeSwing",
+        "damage": 1.2,
+        "attackTime": 90,
+        "image_xscale": 1,
+        "image_yscale": 1,
+        "CritMod": 0,
+        "knockback": 0,
+        "duration": -1,
+        "hitCD": 30,
+        "hitLimit": -1,
+        "hitbox": 0,
+        "startx": 0,
+        "starty": -16,
+        "stayOnCreator": 1,
+        "faceCreatorDirection": 1,
+        "maxLevel": 7,
+        "attackCount": 1,
+        "attackDelay": 0,
+        "destroyOnHitLimit": 0,
+        "sprite_index": {
+          "_kind": "ref",
+          "display": "ref sprite 2989"
+        }
+      }
+    },
+    {
+      "level": 2,
+      "raw_config": {
+        "attackID": "AxeSwing",
+        "damage": 1.56,
+        "attackTime": 90,
+        "image_xscale": 1,
+        "image_yscale": 1,
+        "CritMod": 0,
+        "knockback": 0,
+        "duration": -1,
+        "hitCD": 30,
+        "hitLimit": -1,
+        "hitbox": 0,
+        "startx": 0,
+        "starty": -16,
+        "stayOnCreator": 1,
+        "faceCreatorDirection": 1,
+        "maxLevel": 7,
+        "attackCount": 1,
+        "attackDelay": 0,
+        "destroyOnHitLimit": 0,
+        "sprite_index": {
+          "_kind": "ref",
+          "display": "ref sprite 2989"
+        }
+      }
+    },
+    {
+      "level": 3,
+      "raw_config": {
+        "attackID": "AxeSwing",
+        "damage": 1.56,
+        "attackTime": 90,
+        "image_xscale": 1.2,
+        "image_yscale": 1.2,
+        "CritMod": 0,
+        "knockback": 0,
+        "duration": -1,
+        "hitCD": 30,
+        "hitLimit": -1,
+        "hitbox": 0,
+        "startx": 0,
+        "starty": -16,
+        "stayOnCreator": 1,
+        "faceCreatorDirection": 1,
+        "maxLevel": 7,
+        "attackCount": 1,
+        "attackDelay": 0,
+        "destroyOnHitLimit": 0,
+        "sprite_index": {
+          "_kind": "ref",
+          "display": "ref sprite 2989"
+        }
+      }
+    },
+    {
+      "level": 4,
+      "raw_config": {
+        "attackID": "AxeSwing",
+        "damage": 1.56,
+        "attackTime": 80,
+        "image_xscale": 1.2,
+        "image_yscale": 1.2,
+        "CritMod": 0,
+        "knockback": 0,
+        "duration": -1,
+        "hitCD": 30,
+        "hitLimit": -1,
+        "hitbox": 0,
+        "startx": 0,
+        "starty": -16,
+        "stayOnCreator": 1,
+        "faceCreatorDirection": 1,
+        "maxLevel": 7,
+        "attackCount": 1,
+        "attackDelay": 0,
+        "destroyOnHitLimit": 0,
+        "sprite_index": {
+          "_kind": "ref",
+          "display": "ref sprite 2989"
+        }
+      }
+    },
+    {
+      "level": 5,
+      "raw_config": {
+        "attackID": "AxeSwing",
+        "damage": 2,
+        "attackTime": 80,
+        "image_xscale": 1.2,
+        "image_yscale": 1.2,
+        "CritMod": 0,
+        "knockback": 0,
+        "duration": -1,
+        "hitCD": 30,
+        "hitLimit": -1,
+        "hitbox": 0,
+        "startx": 0,
+        "starty": -16,
+        "stayOnCreator": 1,
+        "faceCreatorDirection": 1,
+        "maxLevel": 7,
+        "attackCount": 1,
+        "attackDelay": 0,
+        "destroyOnHitLimit": 0,
+        "sprite_index": {
+          "_kind": "ref",
+          "display": "ref sprite 2989"
+        }
+      }
+    },
+    {
+      "level": 6,
+      "raw_config": {
+        "attackID": "AxeSwing",
+        "damage": 2,
+        "attackTime": 80,
+        "image_xscale": 1.44,
+        "image_yscale": 1.44,
+        "CritMod": 0,
+        "knockback": 0,
+        "duration": -1,
+        "hitCD": 30,
+        "hitLimit": -1,
+        "hitbox": 0,
+        "startx": 0,
+        "starty": -16,
+        "stayOnCreator": 1,
+        "faceCreatorDirection": 1,
+        "maxLevel": 7,
+        "attackCount": 1,
+        "attackDelay": 0,
+        "destroyOnHitLimit": 0,
+        "sprite_index": {
+          "_kind": "ref",
+          "display": "ref sprite 2989"
+        }
+      }
+    },
+    {
+      "level": 7,
+      "raw_config": {
+        "attackID": "AxeSwing",
+        "damage": 2,
+        "attackTime": 80,
+        "image_xscale": 1.44,
+        "image_yscale": 1.44,
+        "CritMod": 1.5,
+        "knockback": 0,
+        "duration": -1,
+        "hitCD": 30,
+        "hitLimit": -1,
+        "hitbox": 0,
+        "startx": 0,
+        "starty": -16,
+        "stayOnCreator": 1,
+        "faceCreatorDirection": 1,
+        "maxLevel": 7,
+        "attackCount": 1,
+        "attackDelay": 0,
+        "destroyOnHitLimit": 0,
+        "sprite_index": {
+          "_kind": "ref",
+          "display": "ref sprite 2990"
+        },
+        "sureCrit": 1
+      }
+    }
+  ],
+  "scope": {
+    "stage": "STAGE 1",
+    "duration_seconds": 300,
+    "skills": false,
+    "special": false,
+    "weapon_upgrades": "agent_selected"
+  },
+  "unresolved": [
+    "simulation tick rate and event order",
+    "movement units and collision rules",
+    "attack mask and active animation frames",
+    "damage formula and rounding",
+    "critical-hit formula and RNG",
+    "contact damage and invulnerability",
+    "XP thresholds and upgrade-offer generation",
+    "Stage 1 spawn schedule and enemy behavior",
+    "input/reset bridge and deterministic gameplay replay"
+  ],
+  "notes": [
+    "raw_config preserves game field names and values; attackTime is not yet labeled in seconds or ticks.",
+    "damage is an extracted coefficient, not a measured HP loss.",
+    "Level configurations apply the extracted per-level patches cumulatively; this merge still needs runtime level-up validation.",
+    "No game sprites, executable, save data, or localized descriptions are included."
+  ]
+}
