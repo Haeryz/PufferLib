@@ -278,12 +278,22 @@ static void receive_commands() {
             }
             trace.flush();
         }
+        else if (verb == "catalog") snapshot_catalog();
+        else if (verb == "inspect") {
+            std::string object;
+            command >> object;
+            api->InvokeWithObject(RValue(object.c_str()), [&](CInstance* self, CInstance*) {
+                trace << "{\"kind\":\"inspected_object\",\"object\":" << quote(object)
+                      << ",\"state\":" << value_json(self->ToRValue()) << "}\n";
+            });
+        }
         else if (verb == "screenshot") screenshot_requested = true;
         else if (verb == "call") {
             std::string object, method;
             command >> object >> method;
             const std::set<std::string> allowed = {"Confirmed", "SelectDown", "SelectUp",
-                "SelectLeft", "SelectRight", "EnterKey", "ReturnMenu"};
+                "SelectLeft", "SelectRight", "EnterKey", "ReturnMenu",
+                "Select", "Left", "Right", "Up", "Down"};
             if (allowed.contains(method)) {
                 api->InvokeWithObject(RValue(object.c_str()), [&](CInstance* self, CInstance*) {
                     RValue* function = nullptr;

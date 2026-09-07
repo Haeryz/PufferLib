@@ -31,6 +31,14 @@ cd /mnt/d/Banger/RL-Learn/PufferLib
 MODE=${1:-train}
 shift || true
 
+# Obsolete HoloCure implementations were removed for reconstruction from game
+# evidence. Do not accidentally execute a previously compiled environment.
+if [[ ! -f ocean/holocure/holocure.h ]]; then
+    echo "HoloCure environment is being rebuilt from tools/holocure_reference game evidence." >&2
+    echo "Training and evaluation are unavailable until the replacement is implemented and verified." >&2
+    exit 1
+fi
+
 case $MODE in
     build)
         echo "Rebuilding HoloCure (ranged) C extension..."

@@ -1,5 +1,5 @@
 // Redirect only this research executable's imported app-data lookup.
-// Loaded before the runner's entrypoint by Aurie's native-module loader.
+                                                        // Loaded before the runner's entrypoint by Aurie's native-module loader.
 #include <windows.h>
 #include <shlobj.h>
 #include <cstring>
@@ -25,17 +25,17 @@ static void log_exit(DWORD code) {
     for (USHORT i = 0; i < frame_count; ++i) {
         HMODULE module = nullptr;
         char name[MAX_PATH]{};
-        GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+        GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODU                                                                                            LE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,                                                                                                                                                                                                                                                                                                                                                                                                                               
                            reinterpret_cast<LPCSTR>(frames[i]), &module);
         GetModuleFileNameA(module, name, MAX_PATH);
-        char* base_name = strrchr(name, '\\');
+        char* base_name = strrchr(name, '\\');                                        
         count = sprintf_s(text, "%s+0x%llx\r\n", base_name ? base_name + 1 : name,
                           reinterpret_cast<ULONG_PTR>(frames[i]) - reinterpret_cast<ULONG_PTR>(module));
         WriteFile(file, text, count, &written, nullptr);
     }
     CloseHandle(file);
 }
-
+                                                                                                                         
 static void WINAPI research_exit(UINT code) {
     log_exit(code);
     original_exit(code);

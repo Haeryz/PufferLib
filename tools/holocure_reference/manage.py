@@ -77,6 +77,15 @@ def probe(seconds: int, passive=False, visible=False):
     trace = LOCAL / "traces" / time.strftime("%Y%m%d-%H%M%S")
     profile.mkdir(parents=True, exist_ok=True)
     trace.mkdir(parents=True, exist_ok=False)
+    run_manifest = {
+        "game_version": "0.7.1746645739",
+        "files": [fingerprint(game / name) for name in ("HoloCure.exe", "data.win")],
+        "recorder": fingerprint(game / "mods/aurie/HoloReference.dll"),
+        "profile_files": [dict(relative_path=str(path.relative_to(profile)), **fingerprint(path))
+                          for path in sorted(profile.rglob("*")) if path.is_file()],
+        "status": "instrumented_game_capture; parity_unverified",
+    }
+    (trace / "run_manifest.json").write_text(json.dumps(run_manifest, indent=2) + "\n", encoding="utf-8")
     env = environment()
     env.update(HOLOCURE_PROFILE_DIR=str(profile), HOLOCURE_TRACE_DIR=str(trace),
                LOCALAPPDATA=str(profile), APPDATA=str(profile))
@@ -86,7 +95,9 @@ def probe(seconds: int, passive=False, visible=False):
     startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     startup.wShowWindow = 0
     with (trace / "process.log").open("w", encoding="utf-8") as output:
-        proc = subprocess.Popen([str(game / "HoloCure.exe"), "-noaudio", "-inawindow",
+        # The intro calls audio_play_sound with resource handles. -noaudio
+        # makes those handles invalid in this build and aborts the miner.
+        proc = subprocess.Popen([str(game / "HoloCure.exe"), "-inawindow",
                                  "-nosteamrestart", "-debugoutput", str(trace / "runner.log")],
                                 cwd=game, env=env, startupinfo=startup,
                                 stdout=output, stderr=subprocess.STDOUT)
@@ -103,6 +114,10 @@ def probe(seconds: int, passive=False, visible=False):
         result = {"exit_code": proc.returncode, "bounded_probe_stopped": timed_out,
                   "trace_exists": (trace / "probe.jsonl").is_file(),
                   "profile_files": [str(p.relative_to(profile)) for p in profile.rglob("*") if p.is_file()]}
+        result["gameplay_reached"] = False
+        if result["trace_exists"]:
+            with (trace / "probe.jsonl").open(encoding="utf-8", errors="replace") as samples:
+                result["gameplay_reached"] = any('"kind":"gameplay_start"' in line for line in samples)
         for name in ("aurie.log", "YYToolkit.log"):
             if (game / name).is_file():
                 shutil.copy2(game / name, trace / name)
