@@ -5,7 +5,8 @@ The canonical format is what trace_check.py validates:
   sample  = {decision, tick, action, state, events}
 
 State is partitioned by object role (player/enemies/attacks/xp/items/manager).
-Events are derived from per-tick state diffs (hit, kill, spawn, damage, level_up, pickup).
+Events are descriptive state deltas, not observed gameplay event order.
+The output remains discovery-only and cannot establish gameplay parity.
 Discovery-only records (probe_header, event_discovered, heartbeat, catalog_snapshot,
 global_data, global_names, probe_command, object_step) are skipped — they cannot
 establish gameplay fidelity on their own.
@@ -13,6 +14,7 @@ establish gameplay fidelity on their own.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -29,7 +31,7 @@ MANAGER_ROLES = {"obj_StageManager", "obj_PlayerManager", "obj_MobManager",
 
 INSTANCE_FIELDS = ("object", "id", "x", "y", "sprite_index", "image_index",
                    "image_xscale", "image_yscale", "image_angle", "image_alpha",
-                   "speed", "direction", "visible")
+                   "speed", "direction", "visible", "omitted_members")
 
 
 def classify(object_name: str) -> str:
@@ -57,10 +59,17 @@ def instance_state(inst: dict) -> dict:
 def build_state(canonical_tick: dict) -> dict:
     state: dict = {"enemies": [], "attacks": [], "xp": [], "items": [],
                    "managers": {}, "other": []}
+    identities = set()
     for inst in canonical_tick.get("instances", []):
+        identity = instance_key(inst)
+        if identity in identities:
+            raise ValueError(f"Duplicate instance ID {identity}; recorder identity is invalid")
+        identities.add(identity)
         role = classify(inst.get("object", ""))
         ist = instance_state(inst)
         if role == "player":
+            if "player" in state:
+                raise ValueError("Multiple players require an explicit multiplayer schema")
             state["player"] = ist
         elif role in ("enemies", "attacks", "xp", "items", "other"):
             state[role].append(ist)
@@ -71,7 +80,10 @@ def build_state(canonical_tick: dict) -> dict:
 
 
 def instance_key(inst: dict) -> str:
-    return f'{inst.get("object")}:{inst.get("id")}'
+    identity = inst.get("id")
+    if type(identity) not in (int, float) or not math.isfinite(identity) or int(identity) != identity:
+        raise ValueError("Missing or invalid instance ID; discovery trace cannot track entities")
+    return str(int(identity))
 
 
 def compute_events(prev_state: dict, state: dict) -> list[str]:
@@ -80,48 +92,49 @@ def compute_events(prev_state: dict, state: dict) -> list[str]:
     prev_player = prev_state.get("player")
     player = state.get("player")
     if prev_player and player:
-        prev_hp = prev_player.get("hp")
-        hp = player.get("hp")
+        prev_hp = prev_player.get("HP")
+        hp = player.get("HP")
         if isinstance(prev_hp, (int, float)) and isinstance(hp, (int, float)):
             if hp < prev_hp:
-                events.append("damage_taken")
-        prev_level = prev_player.get("level")
-        level = player.get("level")
+                events.append("player_hp_decreased")
+        # wlevel is the main weapon level, not character level.
+        prev_level = prev_player.get("wlevel")
+        level = player.get("wlevel")
         if isinstance(prev_level, (int, float)) and isinstance(level, (int, float)):
             if level > prev_level:
-                events.append("level_up")
-        prev_xp = prev_player.get("xp")
-        xp = player.get("xp")
+                events.append("weapon_level_increased")
+        prev_xp = prev_player.get("EXP")
+        xp = player.get("EXP")
         if isinstance(prev_xp, (int, float)) and isinstance(xp, (int, float)):
             if xp > prev_xp:
-                events.append("xp_gain")
+                events.append("player_exp_increased")
 
     prev_enemies = {instance_key(e): e for e in prev_state.get("enemies", [])}
     enemies = {instance_key(e): e for e in state.get("enemies", [])}
     for key in prev_enemies:
         if key not in enemies:
-            events.append("kill")
+            events.append("enemy_disappeared")
     for key in enemies:
         if key not in prev_enemies:
-            events.append("spawn")
+            events.append("enemy_appeared")
         else:
-            prev_hp = prev_enemies[key].get("hp")
-            hp = enemies[key].get("hp")
+            prev_hp = prev_enemies[key].get("HP")
+            hp = enemies[key].get("HP")
             if isinstance(prev_hp, (int, float)) and isinstance(hp, (int, float)):
                 if hp < prev_hp:
-                    events.append("hit")
+                    events.append("enemy_hp_decreased")
 
     prev_attacks = {instance_key(a): a for a in prev_state.get("attacks", [])}
     attacks = {instance_key(a): a for a in state.get("attacks", [])}
     for key in attacks:
         if key not in prev_attacks:
-            events.append("attack_created")
+            events.append("attack_appeared")
 
     prev_xp = {instance_key(x): x for x in prev_state.get("xp", [])}
     xp = {instance_key(x): x for x in state.get("xp", [])}
     for key in prev_xp:
         if key not in xp:
-            events.append("xp_collected")
+            events.append("xp_disappeared")
 
     return events
 
@@ -148,8 +161,8 @@ def convert(probe_path: Path, manifest: dict, scenario: str) -> tuple[dict, list
                 continue
             try:
                 row = json.loads(line)
-            except json.JSONDecodeError:
-                continue
+            except json.JSONDecodeError as error:
+                raise ValueError("Malformed or truncated probe; refusing to silently drop records") from error
             kind = row.get("kind")
             if kind == "gameplay_start":
                 started = True
@@ -183,6 +196,11 @@ def convert(probe_path: Path, manifest: dict, scenario: str) -> tuple[dict, list
         "scenario": scenario,
         "tick_rate": tick_rate,
         "backend": "game",
+        "validation_status": "discovery_only",
+        "event_semantics": "state_deltas_not_gameplay_event_order",
+        "action_semantics": "requested_keys_not_verified_applied_input",
+        "probe_sha256": hashlib.sha256(probe_path.read_bytes()).hexdigest(),
+        "source_manifest": manifest,
     }
     return header, samples
 

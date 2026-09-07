@@ -62,6 +62,14 @@ class DataWinTests(unittest.TestCase):
 
 
 class TraceTests(unittest.TestCase):
+    def test_retired_injection_replay_cannot_produce_parity_output(self):
+        from replay_trace import replay
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "simulator.jsonl"
+            with self.assertRaisesRegex(RuntimeError, "copied reference states"):
+                replay(Path(directory) / "game.jsonl", output)
+            self.assertFalse(output.exists())
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

@@ -25,7 +25,7 @@ static void log_exit(DWORD code) {
     for (USHORT i = 0; i < frame_count; ++i) {
         HMODULE module = nullptr;
         char name[MAX_PATH]{};
-        GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODU                                                                                            LE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,                                                                                                                                                                                                                                                                                                                                                                                                                               
+        GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
                            reinterpret_cast<LPCSTR>(frames[i]), &module);
         GetModuleFileNameA(module, name, MAX_PATH);
         char* base_name = strrchr(name, '\\');                                        

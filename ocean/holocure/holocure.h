@@ -160,7 +160,7 @@ static void spawn_wave(HoloCure* env, int count, int tick) {
         e->spawned_time = tick; e->alive_for = 0;
         e->dir_change_time = DIR_CHANGE_TIME; e->view_check = VIEW_CHECK;
         e->image_index = 0.1f;
-        e->direction_moving = point_direction(e->y, e->x, env->player.y, env->player.x);
+        e->direction_moving = point_direction(e->x, e->y, env->player.x, env->player.y);
         env->n_enemies++;
     }
 }
@@ -215,7 +215,7 @@ void c_step(HoloCure* env) {
         e->dir_change_time--;
         if (e->dir_change_time <= 0) {
             e->dir_change_time = DIR_CHANGE_TIME;
-            e->direction_moving = point_direction(e->y, e->x, p->y, p->x);
+            e->direction_moving = point_direction(e->x, e->y, p->x, p->y);
         }
         e->view_check = (e->view_check - 1 + (VIEW_CHECK + 1)) % (VIEW_CHECK + 1);
         float rad = e->direction_moving * (float)M_PI / 180.0f;

@@ -42,6 +42,9 @@ def compare(reference: Path, candidate: Path, tolerance: float = 1.0) -> dict:
         raise ValueError("Position tolerance must be finite and nonnegative")
     ref_header, ref_samples = read_trace(reference)
     sim_header, sim_samples = read_trace(candidate)
+    for header in (ref_header, sim_header):
+        if header.get("validation_status") == "discovery_only":
+            raise ValueError("Discovery-only state deltas cannot establish gameplay parity")
     if ref_header["backend"] != "game" or sim_header["backend"] != "simulator":
         raise ValueError("Expected game reference and simulator candidate")
     for key in ("schema_version", "source_sha256", "scenario", "tick_rate"):

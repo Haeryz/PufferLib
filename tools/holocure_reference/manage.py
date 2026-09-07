@@ -77,10 +77,21 @@ def probe(seconds: int, passive=False, visible=False):
     trace = LOCAL / "traces" / time.strftime("%Y%m%d-%H%M%S")
     profile.mkdir(parents=True, exist_ok=True)
     trace.mkdir(parents=True, exist_ok=False)
+    # Preserve exact initial saves, not only filenames or mutable shared saves.
+    shutil.copytree(profile, trace / "profile_before")
     run_manifest = {
         "game_version": "0.7.1746645739",
         "files": [fingerprint(game / name) for name in ("HoloCure.exe", "data.win")],
         "recorder": fingerprint(game / "mods/aurie/HoloReference.dll"),
+        "instrumentation": [fingerprint(game / relative) for relative in (
+            "mods/native/HoloProfile.dll", "mods/native/AurieCore.dll", "mods/aurie/YYToolkit.dll")],
+        "recorder_source": fingerprint(ROOT / "recorder.cpp"),
+        "profile_isolation_source": fingerprint(ROOT / "profile_isolation.cpp"),
+        "source_binary_correspondence": "working-tree source hashes; correspondence to staged DLLs must be checked separately",
+        "source_manifest": json.loads((LOCAL / "source_manifest.json").read_text(encoding="utf-8")),
+        "scenario": "discovery; menu commands and actual gameplay state recorded in probe.jsonl",
+        "input_semantics": "requested keys; applied input not yet verified",
+        "sampling_phase": "after player Step_0; not global end-of-tick",
         "profile_files": [dict(relative_path=str(path.relative_to(profile)), **fingerprint(path))
                           for path in sorted(profile.rglob("*")) if path.is_file()],
         "status": "instrumented_game_capture; parity_unverified",
@@ -109,7 +120,15 @@ def probe(seconds: int, passive=False, visible=False):
             timed_out = True
         finally:
             if proc.poll() is None:
-                proc.terminate()
+                command_file = trace / "commands.txt"
+                if not command_file.exists():
+                    command_file.write_text("stop_capture\n", encoding="ascii")
+                    # Let the game-thread recorder finish and flush a record.
+                    deadline = time.monotonic() + 5
+                    while proc.poll() is None and command_file.exists() and time.monotonic() < deadline:
+                        time.sleep(0.1)
+                if proc.poll() is None:
+                    proc.terminate()
                 proc.wait(timeout=10)
         result = {"exit_code": proc.returncode, "bounded_probe_stopped": timed_out,
                   "trace_exists": (trace / "probe.jsonl").is_file(),
@@ -121,6 +140,9 @@ def probe(seconds: int, passive=False, visible=False):
         for name in ("aurie.log", "YYToolkit.log"):
             if (game / name).is_file():
                 shutil.copy2(game / name, trace / name)
+        shutil.copytree(profile, trace / "profile_after")
+        result["profile_files_after"] = [dict(relative_path=str(path.relative_to(profile)), **fingerprint(path))
+                                         for path in sorted(profile.rglob("*")) if path.is_file()]
         (trace / "result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
         print(json.dumps(result, indent=2))
 

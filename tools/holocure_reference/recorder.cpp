@@ -131,6 +131,10 @@ static std::string builtin_json(CInstance* instance, const char* name) {
                 return "null";
             }
             case VALUE_STRING: return quote(value.ToString());
+            // Resource and instance IDs are typed references in this runner.
+            // Use its conversion routine (as YYTK CInstance::GetMembers does),
+            // never treat the reference payload as a C++ pointer.
+            case VALUE_REF: return std::to_string(value.ToInt64());
             default: return "null";
         }
     }
@@ -138,12 +142,18 @@ static std::string builtin_json(CInstance* instance, const char* name) {
 }
 
 static void snapshot_world() {
-    trace << "{\"kind\":\"canonical_tick\",\"tick\":" << gameplay_tick
+    trace << "{\"kind\":" << quote(in_gameplay ? "canonical_tick" : "discovery_world")
+          << ",\"tick\":" << gameplay_tick
+          << ",\"sampling_phase\":" << quote(in_gameplay ? "after_player_step" : "command_in_input_begin_step")
           << ",\"action\":" << action_json()
           << ",\"instances\":[";
     bool first = true;
+    std::set<CInstance*> visited;
     for (int i = 0; i < TRACKED_COUNT; ++i) {
         api->InvokeWithObject(RValue(TRACKED_OBJECTS[i]), [&](CInstance* self, CInstance*) {
+            // InvokeWithObject includes descendants; parent/child queries may
+            // encounter the same instance. Emit each live instance once.
+            if (!visited.insert(self).second) return;
             if (!first) trace << ',';
             first = false;
             RValue obj_idx_val;
@@ -171,23 +181,37 @@ static void snapshot_world() {
                   << ",\"visible\":" << builtin_json(self, "visible")
                   << ",\"vars\":{";
             bool first_var = true;
-            unsigned var_count = 0;
+            std::vector<std::string> omitted_members;
             api->EnumInstanceMembers(self->ToRValue(), [&](const char* member_name, RValue* member) {
-                if (var_count++ >= 128) return true;
                 if (member->m_Kind != VALUE_REAL && member->m_Kind != VALUE_INT32 &&
                     member->m_Kind != VALUE_INT64 && member->m_Kind != VALUE_BOOL &&
-                    member->m_Kind != VALUE_STRING) return false;
+                    member->m_Kind != VALUE_STRING && member->m_Kind != VALUE_REF) {
+                    omitted_members.emplace_back(member_name);
+                    return false;
+                }
                 if (!first_var) trace << ',';
                 first_var = false;
-                trace << quote(member_name) << ':' << value_json(*member);
+                // Keep live references identifiable without recursively
+                // re-expanding static libraries/large maps on every tick.
+                // Full contents remain available through explicit inspect.
+                trace << quote(member_name) << ':';
+                if (member->m_Kind == VALUE_REF)
+                    trace << "{\"_kind\":\"ref\",\"display\":"
+                          << quote(api->CallBuiltin("string", {*member}).ToString()) << '}';
+                else trace << value_json(*member);
                 return false;
             });
-            trace << "}}";
+            trace << "},\"omitted_members\":[";
+            for (size_t j = 0; j < omitted_members.size(); ++j) {
+                if (j) trace << ',';
+                trace << quote(omitted_members[j]);
+            }
+            trace << "]}";
         });
     }
     trace << "]}\n";
     trace.flush();
-    ++gameplay_tick;
+    if (in_gameplay) ++gameplay_tick;
 }
 
 static void snapshot_catalog() {
@@ -279,6 +303,13 @@ static void receive_commands() {
             trace.flush();
         }
         else if (verb == "catalog") snapshot_catalog();
+        else if (verb == "stop_capture") {
+            trace << "{\"kind\":\"capture_stopped\",\"tick\":" << gameplay_tick << "}\n";
+            trace.flush();
+            trace.close();
+            break;
+        }
+        else if (verb == "world" && !in_gameplay) snapshot_world();
         else if (verb == "inspect") {
             std::string object;
             command >> object;
@@ -360,12 +391,14 @@ static void receive_commands() {
 }
 
 static void event_callback(FWCodeEvent& context) {
+    if (!trace.is_open()) return;
     auto* code = std::get<2>(context.Arguments());
     const char* raw_name = code ? code->GetName() : nullptr;
     std::string name = raw_name ? raw_name : "<unnamed>";
     ++event_sequence;
     if (name == "gml_Object_input_controller_object_Step_1") {
         receive_commands();
+        if (!trace.is_open()) return;
         for (int key = 0; key < 256; ++key)
             if (held_keys[key]) api->CallBuiltin("keyboard_key_press", {key});
     }
@@ -401,6 +434,7 @@ static void event_callback(FWCodeEvent& context) {
 }
 
 static void frame_callback(FWFrame&) {
+    if (!trace.is_open()) return;
     ++presents;
     if (screenshot_requested) {
         screenshot_requested = false;
@@ -415,6 +449,7 @@ static void frame_callback(FWFrame&) {
 }
 
 static void window_callback(FWWndProc& context) {
+    if (!trace.is_open()) return;
     UINT message = std::get<1>(context.Arguments());
     if (message == WM_CLOSE || message == WM_DESTROY || message == WM_QUIT) {
         trace << "{\"kind\":\"window_message\",\"message\":" << message << "}\n";
